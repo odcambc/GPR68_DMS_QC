@@ -1,9 +1,11 @@
-# DMS Analysis Stub
+# GPR68 sequencing and DMS QC
 
 ## Description
 This repository contains data and code pertaining to Howard, Hoppe, et al 2023.
 
 The code in this repository is specific to the QC and analysis of the DMS data in this publication.
+
+The pipeline used to generate these results is available in the following repository: https://github.com/odcambc/GPR68_processing
 
 ## Table of Contents
 - [DMS Analysis Stub](#dms-analysis-stub)
@@ -73,6 +75,3 @@ This workflow, is built off of a stub analysis workflow we developed: see https:
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
-
-## Contributing
-Pull requests and issues are welcome and appreciated.
