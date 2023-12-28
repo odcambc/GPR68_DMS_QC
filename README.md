@@ -22,7 +22,7 @@ Clone the repository into a new directory:
 git clone https://github.com/odcambc/GPR68_DMS_QC.git
 ```
 
-After cloning, you will need to initialize the repository. If you are using rstudio, you can do this by opening the project file `dms_analysis_stub.Rproj`, then initializing the environment with the comment `renv::restore()`.
+After cloning, you will need to initialize the repository. If you are using rstudio, you can do this by opening the project file `GPR68_QC.Rproj`, then initializing the environment with the comment `renv::restore()`.
 
 Otherwise, you can initialize the repository by running the following command from the root directory of the repository:
 
@@ -35,7 +35,7 @@ data and MultiQC reports.
 
 ## Usage
 ### File Structure
-The file structure can be modified as needed, but the default structure is as follows:
+The following files are contained in this repository:
 ```
 ├── analysis
 │   ├── functions
