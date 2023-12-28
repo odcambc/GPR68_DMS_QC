@@ -71,7 +71,7 @@ The following files are contained in this repository:
 ```
 
 ## Citations
-This workflow, is built off of a stub analysis workflow we developed: see https://github.com/odcambc/dms_analysis_stub
+This workflow is built off of a stub analysis workflow we developed: see https://github.com/odcambc/dms_analysis_stub
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
