@@ -1,0 +1,422 @@
+---
+title: "GPR68 DMS QC analysis - scores"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(bio3d)
+library(patchwork)
+
+source("functions/dms_analysis_utilities.R")
+source("functions/plot_heatmap.R")
+source("functions/map_pdb.R")
+#source("functions/mkh_heatmap_function.R")
+```
+
+Read the score file
+
+```{r}
+# Enrich2 score files
+scores_file = "../data/scores/main_identifiers_scores.tsv"
+
+#ph55	ph55	ph55	ph55_ogr	ph55_ogr	ph55_ogr	ph6	ph6	ph6	ph65	ph65	ph65	ph65_ogr	ph65_ogr	ph65_ogr	ph6_ogr	ph6_ogr	ph6_ogr	surface	surface	surface
+
+variantscore_colnames <- c("hgvs", "SE_ph_55", "epsilon_ph_55", "score_ph_55",
+                           "SE_ph_55_ogr", "epsilon_ph_55_ogr", "score_ph_55_ogr",
+                           "SE_ph_6", "epsilon_ph_6", "score_ph_6",
+                           "SE_ph_65", "epsilon_ph_65", "score_ph_65",
+                           "SE_ph_65_ogr", "epsilon_ph_65_ogr", "score_ph_65_ogr",
+                           "SE_ph_6_ogr", "epsilon_ph_6_ogr", "score_ph_6_ogr",
+                           "SE_surface", "epsilon_surface", "score_surface")
+                           
+
+scores <- read_delim(scores_file, col_names = variantscore_colnames, skip=3)
+scores <- process_hgvs_df(scores)
+
+scores$is.wt = scores$mutation_type == "S"
+
+# Write the dataframe to a csv
+#write.csv(scores, "../data/scores.csv", row.names = FALSE)
+```
+
+Read the replicate score file
+
+```{r}
+replicate_scores_file = "../data/scores/main_identifiers_scores_shared_full.tsv"
+
+replicate_score_colnames <- c("hgvs", "SE_ph_55_R1", "score_ph_55_R1",
+                              "SE_ph_55_R2", "score_ph_55_R2",
+                              "SE_ph_55_R3", "score_ph_55_R3",
+                              "SE_ph_55_ogr_R1", "score_ph_55_ogr_R1",
+                              "SE_ph_55_ogr_R2", "score_ph_55_ogr_R2",
+                              "SE_ph_55_ogr_R3", "score_ph_55_ogr_R3",
+                              "SE_ph_6_R1", "score_ph_6_R1",
+                              "SE_ph_6_R2", "score_ph_6_R2",
+                              "SE_ph_6_R3", "score_ph_6_R3",
+                              "SE_ph_65_R1", "score_ph_65_R1",
+                              "SE_ph_65_R2", "score_ph_65_R2",
+                              "SE_ph_65_R3", "score_ph_65_R3",
+                              "SE_ph_65_ogr_R1", "score_ph_65_ogr_R1",
+                              "SE_ph_65_ogr_R2", "score_ph_65_ogr_R2",
+                              "SE_ph_65_ogr_R3", "score_ph_65_ogr_R3",
+                              "SE_ph_6_ogr_R1", "score_ph_6_ogr_R1",
+                              "SE_ph_6_ogr_R2", "score_ph_6_ogr_R2",
+                              "SE_ph_6_ogr_R3", "score_ph_6_ogr_R3",
+                              "SE_surface_R1", "score_surface_R1",
+                              "SE_surface_R2", "score_surface_R2",
+                              "SE_surface_R3", "score_surface_R3")
+
+replicate_scores <- read_delim(replicate_scores_file, col_names = replicate_score_colnames, skip=4)
+replicate_scores <- process_hgvs_df(replicate_scores)
+
+```
+
+Load the WT sequence
+```{r}
+wt_fasta = "../data/sequences/gpr68_wt.fasta"
+
+con=file(wt_fasta,open="r")
+wt = readLines(con)[2]
+close(con)
+```
+
+Plot scatterplots of replicates, starting with pH 5.5 condition
+
+```{r}
+# Plot scatterplots of replicates
+
+scatterplot_ph_55_R1_R2 <- ggplot(replicate_scores, aes(x=score_ph_55_R1, y=score_ph_55_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 5.5") +
+  ylab("Score replicate 2, pH 5.5") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_55_R1_R3 <- ggplot(replicate_scores, aes(x=score_ph_55_R1, y=score_ph_55_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 5.5") +
+  ylab("Score replicate 3, pH 5.5") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_55_R2_R3 <- ggplot(replicate_scores, aes(x=score_ph_55_R2, y=score_ph_55_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 2, pH 5.5") +
+  ylab("Score replicate 3, pH 5.5") +
+  coord_fixed() +
+  theme_bw()
+
+# Layout
+scatterplot_ph_55 <- scatterplot_ph_55_R1_R2 + scatterplot_ph_55_R1_R3 + scatterplot_ph_55_R2_R3 + plot_layout(ncol = 3)
+
+ggsave("../results/plots/scatterplots/score_replicates_ph_55.png", plot = scatterplot_ph_55, width = 8, height = 3)
+ggsave("../results/plots/scatterplots/score_replicates_ph_55.pdf", plot = scatterplot_ph_55, width = 8, height = 3)
+```
+
+Now pH 6
+
+```{r}
+# Plot scatterplots of replicates
+
+scatterplot_ph_6_R1_R2 <- ggplot(replicate_scores, aes(x=score_ph_6_R1, y=score_ph_6_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6") +
+  ylab("Score replicate 2, pH 6") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_6_R1_R3 <- ggplot(replicate_scores, aes(x=score_ph_6_R1, y=score_ph_6_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6") +
+  ylab("Score replicate 3, pH 6") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_6_R2_R3 <- ggplot(replicate_scores, aes(x=score_ph_6_R2, y=score_ph_6_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 2, pH 6") +
+  ylab("Score replicate 3, pH 6") +
+  coord_fixed() +
+  theme_bw()
+
+# Layout
+scatterplot_ph_6 <- scatterplot_ph_6_R1_R2 + scatterplot_ph_6_R1_R3 + scatterplot_ph_6_R2_R3 + plot_layout(ncol = 3)
+
+ggsave("../results/plots/scatterplots/score_replicates_ph_6.png", plot = scatterplot_ph_6, width = 8, height = 3)
+ggsave("../results/plots/scatterplots/score_replicates_ph_6.pdf", plot = scatterplot_ph_6, width = 8, height = 3)
+
+```
+
+Now pH 6.5
+
+```{r}
+
+# Plot scatterplots of replicates
+
+scatterplot_ph_65_R1_R2 <- ggplot(replicate_scores, aes(x=score_ph_65_R1, y=score_ph_65_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6.5") +
+  ylab("Score replicate 2, pH 6.5") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_65_R1_R3 <- ggplot(replicate_scores, aes(x=score_ph_65_R1, y=score_ph_65_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6.5") +
+  ylab("Score replicate 3, pH 6.5") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_65_R2_R3 <- ggplot(replicate_scores, aes(x=score_ph_65_R2, y=score_ph_65_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 2, pH 6.5") +
+  ylab("Score replicate 3, pH 6.5") +
+  coord_fixed() +
+  theme_bw()
+
+# Layout
+scatterplot_ph_65 <- scatterplot_ph_65_R1_R2 + scatterplot_ph_65_R1_R3 + scatterplot_ph_65_R2_R3 + plot_layout(ncol = 3)
+
+ggsave("../results/plots/scatterplots/score_replicates_ph_65.png", plot = scatterplot_ph_65, width = 8, height = 3)
+ggsave("../results/plots/scatterplots/score_replicates_ph_65.pdf", plot = scatterplot_ph_65, width = 8, height = 3)
+```
+
+Now pH 5.5, OGR
+
+```{r}
+# Plot scatterplots of replicates
+
+scatterplot_ph_55_ogr_R1_R2 <- ggplot(replicate_scores, aes(x=score_ph_55_ogr_R1, y=score_ph_55_ogr_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 5.5 + OGR") +
+  ylab("Score replicate 2, pH 5.5 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_55_ogr_R1_R3 <- ggplot(replicate_scores, aes(x=score_ph_55_ogr_R1, y=score_ph_55_ogr_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 5.5 + OGR") +
+  ylab("Score replicate 3, pH 5.5 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_55_ogr_R2_R3 <- ggplot(replicate_scores, aes(x=score_ph_55_ogr_R2, y=score_ph_55_ogr_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 2, pH 5.5 + OGR") +
+  ylab("Score replicate 3, pH 5.5 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+# Layout
+scatterplot_ph_55_ogr <- scatterplot_ph_55_ogr_R1_R2 + scatterplot_ph_55_ogr_R1_R3 + scatterplot_ph_55_ogr_R2_R3 + plot_layout(ncol = 3)
+
+ggsave("../results/plots/scatterplots/score_replicates_ph_55_ogr.png", plot = scatterplot_ph_55_ogr, width = 8, height = 3)
+ggsave("../results/plots/scatterplots/score_replicates_ph_55_ogr.pdf", plot = scatterplot_ph_55_ogr, width = 8, height = 3)
+
+```
+
+Now pH 6, OGR
+
+```{r}
+
+# Plot scatterplots of replicates
+
+scatterplot_ph_6_ogr_R1_R2 <- ggplot(replicate_scores, aes(x=score_ph_6_ogr_R1, y=score_ph_6_ogr_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6 + OGR") +
+  ylab("Score replicate 2, pH 6 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_6_ogr_R1_R3 <- ggplot(replicate_scores, aes(x=score_ph_6_ogr_R1, y=score_ph_6_ogr_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6 + OGR") +
+  ylab("Score replicate 3, pH 6 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_6_ogr_R2_R3 <- ggplot(replicate_scores, aes(x=score_ph_6_ogr_R2, y=score_ph_6_ogr_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 2, pH 6 + OGR") +
+  ylab("Score replicate 3, pH 6 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+# Layout
+scatterplot_ph_6_ogr <- scatterplot_ph_6_ogr_R1_R2 + scatterplot_ph_6_ogr_R1_R3 + scatterplot_ph_6_ogr_R2_R3 + plot_layout(ncol = 3)
+
+ggsave("../results/plots/scatterplots/score_replicates_ph_6_ogr.png", plot = scatterplot_ph_6_ogr, width = 8, height = 3)
+ggsave("../results/plots/scatterplots/score_replicates_ph_6_ogr.pdf", plot = scatterplot_ph_6_ogr, width = 8, height = 3)
+
+
+```
+
+Now pH 6.5, OGR
+
+```{r}
+
+# Plot scatterplots of replicates
+
+scatterplot_ph_65_ogr_R1_R2 <- ggplot(replicate_scores, aes(x=score_ph_65_ogr_R1, y=score_ph_65_ogr_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6.5 + OGR") +
+  ylab("Score replicate 2, pH 6.5 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_65_ogr_R1_R3 <- ggplot(replicate_scores, aes(x=score_ph_65_ogr_R1, y=score_ph_65_ogr_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, pH 6.5 + OGR") +
+  ylab("Score replicate 3, pH 6.5 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_ph_65_ogr_R2_R3 <- ggplot(replicate_scores, aes(x=score_ph_65_ogr_R2, y=score_ph_65_ogr_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 2, pH 6.5 + OGR") +
+  ylab("Score replicate 3, pH 6.5 + OGR") +
+  coord_fixed() +
+  theme_bw()
+
+# Layout
+scatterplot_ph_65_ogr <- scatterplot_ph_65_ogr_R1_R2 + scatterplot_ph_65_ogr_R1_R3 + scatterplot_ph_65_ogr_R2_R3 + plot_layout(ncol = 3)
+
+ggsave("../results/plots/scatterplots/score_replicates_ph_65_ogr.png", plot = scatterplot_ph_65_ogr, width = 8, height = 3)
+ggsave("../results/plots/scatterplots/score_replicates_ph_65_ogr.pdf", plot = scatterplot_ph_65_ogr, width = 8, height = 3)
+```
+
+Now, surface scores
+
+```{r}
+
+# Plot scatterplots of replicates
+
+scatterplot_surface_R1_R2 <- ggplot(replicate_scores, aes(x=score_surface_R1, y=score_surface_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, surface") +
+  ylab("Score replicate 2, surface") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_surface_R1_R3 <- ggplot(replicate_scores, aes(x=score_surface_R1, y=score_surface_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 1, surface") +
+  ylab("Score replicate 3, surface") +
+  coord_fixed() +
+  theme_bw()
+
+scatterplot_surface_R2_R3 <- ggplot(replicate_scores, aes(x=score_surface_R2, y=score_surface_R3)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "black", linetype = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  stat_cor(method = "pearson", label.x = -3, label.y = -5, color = "blue", size = 3) +
+  xlab("Score replicate 2, surface") +
+  ylab("Score replicate 3, surface") +
+  coord_fixed() +
+  theme_bw()
+
+# Layout
+scatterplot_surface <- scatterplot_surface_R1_R2 + scatterplot_surface_R1_R3 + scatterplot_surface_R2_R3 + plot_layout(ncol = 3)
+
+ggsave("../results/plots/scatterplots/score_replicates_surface.png", plot = scatterplot_surface, width = 8, height = 3)
+ggsave("../results/plots/scatterplots/score_replicates_surface.pdf", plot = scatterplot_surface, width = 8, height = 3)
+```
+
+Plot heatmaps of SEs
+
+```{r}
+  
+print_heatmap(scores, `SE_ph_55`, wt, low = 0, output_file = "../results/plots/heatmaps/heatmap_SE_ph_55.pdf", 
+              order_in = physical_order, names = physical_variant_names,
+              scale = TRUE)
+
+print_heatmap(scores, `SE_ph_6`, wt, low = 0, output_file = "../results/plots/heatmaps/heatmap_SE_ph_6.pdf", 
+              order_in = physical_order, names = physical_variant_names,
+              scale = TRUE)
+
+print_heatmap(scores, `SE_ph_65`, wt, low = 0, output_file = "../results/plots/heatmaps/heatmap_SE_ph_65.pdf",
+              order_in = physical_order, names = physical_variant_names,
+              scale = TRUE)
+
+print_heatmap(scores, `SE_ph_55_ogr`, wt, low = 0, output_file = "../results/plots/heatmaps/heatmap_SE_ph_55_ogr.pdf",
+              order_in = physical_order, names = physical_variant_names,
+              scale = TRUE)
+
+print_heatmap(scores, `SE_ph_6_ogr`, wt, low = 0, output_file = "../results/plots/heatmaps/heatmap_SE_ph_6_ogr.pdf",
+              order_in = physical_order, names = physical_variant_names,
+              scale = TRUE)
+
+print_heatmap(scores, `SE_ph_65_ogr`, wt, low = 0, output_file = "../results/plots/heatmaps/heatmap_SE_ph_65_ogr.pdf",
+              order_in = physical_order, names = physical_variant_names,
+              scale = TRUE)
+
+print_heatmap(scores, `SE_surface`, wt, low = 0, output_file = "../results/plots/heatmaps/heatmap_SE_surface.pdf",
+              order_in = physical_order, names = physical_variant_names,
+              scale = TRUE)
+
+
+```

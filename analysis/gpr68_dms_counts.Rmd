@@ -1,0 +1,121 @@
+---
+title: "GPR68 DMS QC analysis - counts"
+output: html_notebook
+---
+
+
+```{r}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(bio3d)
+
+source("functions/dms_analysis_utilities.R")
+source("functions/plot_heatmap.R")
+source("functions/map_pdb.R")
+#source("functions/mkh_heatmap_function.R")
+
+```
+
+Read in all the count files
+
+```{r}
+# Experiment count files
+
+count_files = list.files("../data/counts", pattern = "*.csv", full.names = TRUE)
+
+# count_files contains a list of all the count files. We want to read them all in and then merge them into a single dataframe.
+
+# Read in the first file and drop column 1 (the row indices)
+counts = read_csv(count_files[1])
+counts = counts %>% select(-1)
+name = gsub("../data/counts/(.*).csv", '\\1', count_files[1])
+
+names(counts)[1] = name
+
+# Now read in the rest of the files, add the 'counts' column to the dataframe by
+# joining on 'hgvs', and rename the 'counts' column to the filename
+
+for (i in 2:length(count_files)) {
+  name = gsub("../data/counts/(.*).csv", '\\1', count_files[i])
+  counts_new = read_csv(count_files[i], show_col_types = FALSE) %>% select(count, hgvs)
+  names(counts_new)[1] = name
+  counts = full_join(counts, counts_new, by = "hgvs")
+}
+
+```
+Generate SI plots.
+
+First: scatterplot between baseline (non-treated) samples.
+
+Also plot regression line and the correlation coefficient.
+
+```{r}
+baseline_scatter <- ggplot(counts, aes(x = `nontreated_R1`, y = `nontreated_R2`)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", se = FALSE) +
+  stat_cor(method = "pearson", label.x = 2000, label.y = 1) +
+  xlab("Baseline replicate 1 counts") +
+  ylab("Baseline replicate 2 counts") +
+  theme_classic()
+
+ggsave("../results/plots/scatterplots/baseline_scatterplot.png", plot = baseline_scatter, width = 5, height = 5)
+ggsave("../results/plots/scatterplots/baseline_scatterplot.pdf", plot = baseline_scatter, width = 5, height = 5)
+```
+
+Next: plot counts per position for baseline samples.
+
+Scale counts axis to log10.
+
+```{r}
+baseline_counts_R1 <- ggplot(counts, aes(x = pos, y = nontreated_R1, fill = mutation_type)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab("Position (AA)") +
+  ylab("Counts") +
+  ggtitle("Baseline replicate 1") +
+  scale_y_log10() +
+  theme_classic()
+
+ggsave("../results/plots/baseline_pos_counts_R1.png", plot = baseline_counts_R1, width = 5, height = 3)
+ggsave("../results/plots/baseline_pos_counts_R1.pdf", plot = baseline_counts_R1, width = 5, height = 3)
+
+baseline_counts_R2 <- ggplot(counts, aes(x = pos, y = nontreated_R2)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(se = FALSE) +
+  xlab("Position (AA)") +
+  ylab("Counts") +
+  ggtitle("Baseline replicate 2") +
+  scale_y_log10() +
+  theme_classic()
+
+ggsave("../results/plots/baseline_pos_counts_R2.png", plot = baseline_counts_R2, width = 5, height = 3)
+ggsave("../results/plots/baseline_pos_counts_R2.pdf", plot = baseline_counts_R2, width = 5, height = 3)
+```
+
+Next: plot the distributions of counts for baseline samples.
+
+```{r}
+baseline_dist_R1 <- ggplot(counts, aes(x = nontreated_R1)) +
+  geom_histogram(bins = 100) +
+  xlab("Counts") +
+  ylab("Frequency") +
+  ggtitle("Baseline replicate 1") +
+  theme_classic()
+
+ggsave("../results/plots/histograms/baseline_dist_R1.png", plot = baseline_dist_R1, width = 5, height = 3)
+ggsave("../results/plots/histograms/baseline_dist_R1.pdf", plot = baseline_dist_R1, width = 5, height = 3)
+
+baseline_dist_R2 <- ggplot(counts, aes(x = nontreated_R2)) +
+  geom_histogram(bins = 100) +
+  xlab("Counts") +
+  ylab("Frequency") +
+  ggtitle("Baseline replicate 2") +
+  theme_classic()
+
+ggsave("../results/plots/histograms/baseline_dist_R2.png", plot = baseline_dist_R2, width = 5, height = 3)
+ggsave("../results/plots/histograms/baseline_dist_R2.pdf", plot = baseline_dist_R2, width = 5, height = 3)
+
+```
+
