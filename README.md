@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/736473737.svg)](https://zenodo.org/doi/10.5281/zenodo.10999522)
+
 # GPR68 sequencing and DMS QC
 
 ## Description
