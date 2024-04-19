@@ -3,7 +3,7 @@
 # GPR68 sequencing and DMS QC
 
 ## Description
-This repository contains data and code pertaining to Howard, Hoppe, et al 2023.
+This repository contains data and code pertaining to ["Molecular basis of proton-sensing by G protein-coupled receptors," Matthew K Howard, Nicholas Hoppe, Xi-Ping Huang, Christian B Macdonald, Eshan Mehrotra, Patrick Rockefeller Grimes, Adam M Zahm, Donovan D Trinidad, Justin G English, Willow Coyote-Maestas, Aashish Manglik bioRxiv 2024.04.17.590000; doi: https://doi.org/10.1101/2024.04.17.590000](https://doi.org/10.1101/2024.04.17.590000).
 
 The code in this repository is specific to the QC and analysis of the DMS data in this publication.
 
